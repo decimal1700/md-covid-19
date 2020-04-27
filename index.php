@@ -157,26 +157,26 @@ $lastupdated = date('F j, Y \a\t g:i A', (strtotime($date) - (60 * 60 * 4)));
 				                }
 				            } else {
 
-				            	// Import list of valid city/town names into array
+				            	// Import list of valid city/town names into array; this file is equivalent to the list of names in README.md
 				            	$filename = "citowns";
 				            	$lines = file($filename, FILE_IGNORE_NEW_LINES);
 
 				            	// Check which valid name is closest to entered name
-								$distance = -1;
+						$distance = -1;
 
-								foreach ($lines as $name) {
+						foreach ($lines as $name) {
 
-								    $lev = levenshtein(htmlentities($citown), $name);
+							$lev = levenshtein(htmlentities($citown), $name);
 
-								    if ($lev <= $distance || $distance < 0) {
+							if ($lev <= $distance || $distance < 0) {
 
-								        $closest  = $name;
-								        $distance = $lev;
+								$closest  = $name;
+								$distance = $lev;
 
-								    }
-								}
+							}
+						}
 
-								// Suggest closest name
+						// Suggest closest name
 				                echo ("Invalid city/town name. Did you mean: <b>$closest</b>?");
 				            }
 				        } else {
