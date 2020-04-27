@@ -54,7 +54,7 @@ if(isset($_POST['submit'])) { } else {
         <br>
         <div id="container"><br>
 	        <p id="inputlabel"><b>City/Town/ZIP Code</b></p>
-	        <input type="text" id="citown" autocomplete="off" name="citown" placeholder="city name or town name or zip code" value="<?php if(isset($_POST['submit'])) { echo htmlentities($_POST['citown']); } ?>">
+	        <input type="text" id="citown" autocomplete="off" name="citown" placeholder="city name or town name or zip code" value="<?php if(isset($_POST['submit'])) { echo htmlentities($_POST['citown']); } ?>" required>
 			<br><br><br>
 	        <button type="submit" class="button" name="submit">check covid-19 cases</button><br><br><br>
 	        <p id="res">
