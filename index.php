@@ -9,7 +9,7 @@ $date = str_replace("<br/>", "", $date);
 // Format date and fix time zone
 $lastupdated = date('F j, Y \a\t g:i A', (strtotime($date) - (60 * 60 * 4)));
 
-// Import list of valid city/town names into array; this file is equivalent to the list of names in README.md
+// Import list of valid city/town names into array
 $filename = "citowns";
 $lines = file($filename, FILE_IGNORE_NEW_LINES);
 
@@ -49,155 +49,240 @@ if(isset($_POST['submit'])) { } else {
 <body>
     <br>
     <form action="" method="POST">
-        <h2 id="heading">Maryland Cases of COVID-19 By City/Town</h2><br>
+        <h2 id="heading">Maryland Cases of COVID-19 By City/Town/ZIP</h2><br>
         <p id="updatedwhen">Data last updated by the Maryland Department of Health on <?php echo htmlentities($lastupdated);?></p>
         <br>
         <div id="container"><br>
-	        <p id="inputlabel"><b>City/Town</b></p>
-	        <input type="text" id="citown" autocomplete="off" name="citown" placeholder="city/town name" value="<?php if(isset($_POST['submit'])) { echo htmlentities($_POST['citown']); } ?>" required>
+	        <p id="inputlabel"><b>City/Town/ZIP Code</b></p>
+	        <input type="text" id="citown" autocomplete="off" name="citown" placeholder="city name or town name or zip code" value="<?php if(isset($_POST['submit'])) { echo htmlentities($_POST['citown']); } ?>">
 			<br><br><br>
 	        <button type="submit" class="button" name="submit">check covid-19 cases</button><br><br><br>
 	        <p id="res">
-				<?php
+		<?php
+		// Function 'getContents' courtesy of user 'raina77ow' on Stack Overflow. The rest of this code is originally written by Dhruvi Mirani in consultation with online resources.
+                function getContents($str, $startDelimiter, $endDelimiter)
+                {
+                    $contents             = array();
+                    $startDelimiterLength = strlen($startDelimiter);
+                    $endDelimiterLength   = strlen($endDelimiter);
+                    $startFrom            = $contentStart = $contentEnd = 0;
+                    while (false !== ($contentStart = strpos($str, $startDelimiter, $startFrom))) {
+                        $contentStart += $startDelimiterLength;
+                        $contentEnd = strpos($str, $endDelimiter, $contentStart);
+                        if (false === $contentEnd) {
+                            break;
+                        }
+                        $contents[] = substr($str, $contentStart, $contentEnd - $contentStart);
+                        $startFrom  = $contentEnd + $endDelimiterLength;
+                    }
+                    
+                    return $contents;
+                }
 
-				// Function 'getContents' courtesy of user 'raina77ow' on Stack Overflow. The rest of this code is originally written by Dhruvi Mirani in consultation with online resources.
-				function getContents($str, $startDelimiter, $endDelimiter)
-				{
-				    $contents             = array();
-				    $startDelimiterLength = strlen($startDelimiter);
-				    $endDelimiterLength   = strlen($endDelimiter);
-				    $startFrom            = $contentStart = $contentEnd = 0;
-				    while (false !== ($contentStart = strpos($str, $startDelimiter, $startFrom))) {
-				        $contentStart += $startDelimiterLength;
-				        $contentEnd = strpos($str, $endDelimiter, $contentStart);
-				        if (false === $contentEnd) {
-				            break;
-				        }
-				        $contents[] = substr($str, $contentStart, $contentEnd - $contentStart);
-				        $startFrom  = $contentEnd + $endDelimiterLength;
-				    }
-				    
-				    return $contents;
-				}
+                // When the form is posted, start the data retrival
+                if (isset($_POST['submit'])) {
+                    
+                    // If the user does not input a city/town/zip, return an error
+                    if (empty($_POST['citown'])) {
+                        echo ("You must enter a city name, town name, or ZIP code.");
+                    } else {
+                        
+                        // Clean up user input: every letter is lowercase except the first letter of each word in the city/town name.
+                        $citown = ucwords(strtolower($_POST['citown']));
+                        
+                        // City/town capitalization exceptions
+                        if ($citown == "Bwi Airport") {
+                            $citown = "BWI Airport";
+                        } else if ($citown == "Mcdaniel") {
+                            $citown = "McDaniel";
+                        } else if ($citown == "Mchenry") {
+                            $citown = "McHenry";
+                        }
+                        
+                        // If the user enters a special character, return an error
+                        if (!preg_match('/[^A-Za-z0-9\s]/', $citown)) {
 
-				// When the form is posted, start the data retrival
-				if (isset($_POST['submit'])) {
-				    
-				    // If the user does not input a city/town, return an error
-				    if (empty($_POST['citown'])) {
-				        echo ("You must enter a city or town name.");
-				    } else {
-				        
-				        // Clean up user input: every letter is lowercase except the first letter of each word in the city/town name.
-				        $citown = ucwords(strtolower($_POST['citown']));
-				        
-				        // City/town capitalization exceptions
-				        if ($citown == "Bwi Airport") {
-				            $citown = "BWI Airport";
-				        } else if ($citown == "Mcdaniel") {
-				            $citown = "McDaniel";
-				        } else if ($citown == "Mchenry") {
-				            $citown = "McHenry";
-				        }
-				        
-				        // If the user enters a number or special character, return an error
-				        if (!preg_match('/[^A-Za-z\s]/', $citown)) {
-				            
-				            // Encode input for curl data retrival from MD Department of Health database and prevent remote code execution
-				            $citownurl = escapeshellcmd(urlencode($citown));
-				            
-				            // Issue data retrival request
-				            exec("curl -XGET 'https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/ZIPCodes_MD_1/FeatureServer/0/query?f=json&where=ZIPNAME=%27" . $citownurl . "%27&returnGeometry=false&outFields=*'", $output, $returnvar);
-				            
-				            // If the city/town is not recognized by MD, return an error
-				            if (strpos(json_encode($output), 'ProtectedCount') !== false) {
-				                
-				                // Filters out irrelevant information from response
-				                preg_match('/features\\\"\:\[(.*?)\]}"\]/', json_encode($output), $matches_rawcitown);
-				                $cleanoutput = $matches_rawcitown[1];
-				                
-				                // Find MD recognized City/Town names corresponding with entered City/Town name
-				                $p_citown = getContents($cleanoutput, 'ZIPName\":\"', '\",\"ProtectedCoun');
-				                
-				                // Find ZIP codes corresponding with entered City/Town name
-				                $p_zip = getContents($cleanoutput, 'ZIPCODE1\":\"', '\",\"ZIPName');
-				                
-				                // Find COVID-19 case counts corresponding with entered City/Town name
-				                $p_count = getContents($cleanoutput, 'ProtectedCount\":', ',\"Shape__Area');
-				                
-				                // If the returned city/town does not match the clean user input, return an error. This should not happen on production but happened a few times during debugging.
-				                if ($p_citown[0] == $citown) {
-				                    
-				                    // Sanitize city/town name for table output, avoid XSS
-				                    $citown = htmlentities($citown);
-				                    
-				                    // Combine ZIP and COVID-19 case count arrays into keys and values respectively for table output
-				                    $zipstocounts = array_combine($p_zip, $p_count);
-				                    
-				                    // The Maryland Department of Health does not provide any data for cities/towns with fewer than 8 cases. Establish a potential high-end of 7 cases for ZIP codes without data.
-				                    
-				                    $highend = 0;
-				                    
-				                    // Echo table headers
-				                    echo "<table id='tableres' class='table table-sm'><thead class='thead-dark'><tr><th scope='col'>$citown Zip Codes</th><th scope='col'>Cases of COVID-19</th></tr></thead>";
-				                    
-				                    // Add a table row for each zip code of a city/town and its corresponding COVID-19 case number
-				                    foreach ($zipstocounts as $key => $value) {
-				                        if ($value == "null") {
-				                            
-				                            // The Maryland Department of Health does not provide any data for cities/towns with fewer than 8 cases. Establish a potential high-end of 7 cases for ZIP codes without data.
-				                            $formatted_value = "0-7";
-				                            $highend         = $highend + 7;
-				                            
-				                        } else {
-				                            $formatted_value = $value;
-				                        }
-				                        echo ("<tbody><tr><td>$key</td><td>$formatted_value</td></tr>");
-				                    }
-				                    
-				                    // Find the total number of COVID-19 cases in a city/town by adding up ZIP totals
-				                    $totals = array_sum($p_count);
-				                    
-				                    // Account for ZIP codes with no provided data
-				                    $highend = $totals + $highend;
-				                    
-				                    // If the high-end is equal to the total, no need to specify the high-end. If we do specify it, add the note explaining why.
-				                    if ($highend == $totals) {
-				                        echo "<tr><td>Total</td><td>$totals</td></tr></table>";
-				                    } else {
-				                        echo "<tr><td>Total</td><td>$totals-$highend</td></tr></tbody></table><br><p><b>NOTE:</b> There are between 0 and 7 cases of COVID-19 in some ZIP codes of $citown. The Maryland Department of Health does not provide any data for cities/towns with fewer than 8 cases.</p>";
-				                    }
-				                } else {
-				                    echo ("An unexpected error occurred. Please contact Dhruvi Mirani for help.");
-				                }
-				            } else {
+                        	// If the input matches the format of a zip code
+                            if (preg_match('/\b\d{5}\b/', $citown)) {
 
-				            	// Check which valid name is closest to entered name
-						$distance = -1;
+                                // Encode input for curl data retrival from MD Department of Health database and prevent remote code execution
+                                $citownurl = escapeshellcmd(urlencode($citown));
 
-						foreach ($lines as $name) {
+                                // Issue data retrival request
+                                exec("curl -XGET 'https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/ZIPCodes_MD_1/FeatureServer/0/query?f=json&where=ZIPCODE1=%27" . $citownurl . "%27&returnGeometry=false&outFields=*'", $output, $returnvar);
 
-						    $lev = levenshtein(htmlentities($citown), $name);
+                                // If the ZIP code is not recognized by MD, return an error
+                                if (strpos(json_encode($output), 'ProtectedCount') !== false) {
+                                    
+                                    // Filters out irrelevant information from response
+                                    preg_match('/features\\\"\:\[(.*?)\]}"\]/', json_encode($output), $matches_rawcitown);
+                                    $cleanoutput = $matches_rawcitown[1];
+                                    
+                                    // Find MD recognized City/Town name corresponding with entered ZIP
+                                    $p_citown = getContents($cleanoutput, 'ZIPName\":\"', '\",\"ProtectedCoun');
+                                    
+                                    // Find ZIP code corresponding with entered ZIP 
+                                    $p_zip = getContents($cleanoutput, 'ZIPCODE1\":\"', '\",\"ZIPName');
+                                    
+                                    // Find COVID-19 case count corresponding with entered ZIP
+                                    $p_count = getContents($cleanoutput, 'ProtectedCount\":', ',\"Shape__Area');
+                                    
+                                    // If the returned ZIP does not match the clean user input, return an error. This should not happen on production but happened a few times during debugging.
+                                    if ($p_zip[0] == $citown) {
+                                        
+                                        // Sanitize city/town name for table output, avoid XSS
+                                        $citown = htmlentities($citown);
+                                        
+                                        // Combine ZIP and COVID-19 case count arrays into keys and values respectively for table output
+                                        $zipstocounts = array_combine($p_zip, $p_count);
+                                        
+                                        // The Maryland Department of Health does not provide any data for ZIP codes with fewer than 8 cases. Establish a potential high-end of 7 cases for ZIP codes without data.
+                                        
+                                        $highend = 0;
+                                        
+                                        // Echo table headers
+                                        echo "<table id='tableres' class='table table-sm'><thead class='thead-dark'><tr><th scope='col' style='width: 50%;'>Zip Code</th><th scope='col' style='width: 50%;'>Cases of COVID-19</th></tr></thead>";
+                                        
+                                        // Add a table row for each zip code of a city/town and its corresponding COVID-19 case number
+                                        foreach ($zipstocounts as $key => $value) {
+                                            if ($value == "null") {
+                                                
+                                                // The Maryland Department of Health does not provide any data for cities/towns with fewer than 8 cases. Establish a potential high-end of 7 cases for ZIP codes without data.
+                                                $formatted_value = "0-7";
+                                                $highend         = $highend + 7;
+                                                
+                                            } else {
+                                                $formatted_value = $value;
+                                            }
+                                            echo ("<tbody><tr><td>$key</td><td>$formatted_value</td></tr>");
+                                        }
+                                        
+                                        // Find the total number of COVID-19 cases in a ZIP code
+                                        $totals = array_sum($p_count);
+                                        
+                                        // Account for ZIP codes with no provided data
+                                        $highend = $totals + $highend;
+                                        
+                                        // If the high-end is equal to the total, no need to specify the high-end. If we do specify it, add the note explaining why.
+                                        if ($highend == $totals) {
+                                            echo "</tbody></table>";
+                                        } else {
+                                            echo "</tbody></table><br><p><b>NOTE:</b> There are between 0 and 7 cases of COVID-19 in $citown. The Maryland Department of Health does not provide any data for ZIP codes with fewer than 8 cases.</p>";
+                                        }
+                                    } else {
+                                        echo ("An unexpected error occurred. Please contact Dhruvi Mirani for help.");
+                                    }
+                                } else {
 
-						    if ($lev <= $distance || $distance < 0) {
+                                    echo ("Invalid zip code.");
+                                }
 
-							$closest  = $name;
-							$distance = $lev;
+                            // If the input does not match a zip code
+                            } else {
 
-						    }
-						}
+                            	// If the input does not have numbers or special characters
+                                if (!preg_match('/[^A-Za-z\s]/', $citown)) {
 
-						// Suggest closest name
-				                echo ("Invalid city/town name. Did you mean: <a href='?loc=$closest'><b>$closest</b></a>?");
-				            }
-				        } else {
-				            echo ("City or town names cannot include numbers or special characters.");
-				        }
-				    }
-				    echo "<br><br><br><br><br><br>";
-				    
-				}
-				?> 
+                                    // Encode input for curl data retrival from MD Department of Health database and prevent remote code execution
+                                    $citownurl = escapeshellcmd(urlencode($citown));
+                                    
+                                    // Issue data retrival request
+                                    exec("curl -XGET 'https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/ZIPCodes_MD_1/FeatureServer/0/query?f=json&where=ZIPNAME=%27" . $citownurl . "%27&returnGeometry=false&outFields=*'", $output, $returnvar);
+                                    
+                                    // If the city/town is not recognized by MD, return an error
+                                    if (strpos(json_encode($output), 'ProtectedCount') !== false) {
+                                        
+                                        // Filters out irrelevant information from response
+                                        preg_match('/features\\\"\:\[(.*?)\]}"\]/', json_encode($output), $matches_rawcitown);
+                                        $cleanoutput = $matches_rawcitown[1];
+                                        
+                                        // Find MD recognized City/Town names corresponding with entered City/Town name
+                                        $p_citown = getContents($cleanoutput, 'ZIPName\":\"', '\",\"ProtectedCoun');
+                                        
+                                        // Find ZIP codes corresponding with entered City/Town name
+                                        $p_zip = getContents($cleanoutput, 'ZIPCODE1\":\"', '\",\"ZIPName');
+                                        
+                                        // Find COVID-19 case counts corresponding with entered City/Town name
+                                        $p_count = getContents($cleanoutput, 'ProtectedCount\":', ',\"Shape__Area');
+                                        
+                                        // If the returned city/town does not match the clean user input, return an error. This should not happen on production but happened a few times during debugging.
+                                        if ($p_citown[0] == $citown) {
+                                            
+                                            // Sanitize city/town name for table output, avoid XSS
+                                            $citown = htmlentities($citown);
+                                            
+                                            // Combine ZIP and COVID-19 case count arrays into keys and values respectively for table output
+                                            $zipstocounts = array_combine($p_zip, $p_count);
+                                            
+                                            // The Maryland Department of Health does not provide any data for cities/towns with fewer than 8 cases. Establish a potential high-end of 7 cases for ZIP codes without data.
+                                            $highend = 0;
+                                            
+                                            // Echo table headers
+                                            echo "<table id='tableres' class='table table-sm'><thead class='thead-dark'><tr><th scope='col' style='width: 50%;'>$citown Zip Codes</th><th scope='col' style='width: 50%;'>Cases of COVID-19</th></tr></thead>";
+                                            
+                                            // Add a table row for each zip code of a city/town and its corresponding COVID-19 case number
+                                            foreach ($zipstocounts as $key => $value) {
+                                                if ($value == "null") {
+                                                    
+                                                    // The Maryland Department of Health does not provide any data for cities/towns with fewer than 8 cases. Establish a potential high-end of 7 cases for ZIP codes without data.
+                                                    $formatted_value = "0-7";
+                                                    $highend         = $highend + 7;
+                                                    
+                                                } else {
+                                                    $formatted_value = $value;
+                                                }
+                                                echo ("<tbody><tr><td>$key</td><td>$formatted_value</td></tr>");
+                                            }
+                                            
+                                            // Find the total number of COVID-19 cases in a city/town by adding up ZIP totals
+                                            $totals = array_sum($p_count);
+                                            
+                                            // Account for ZIP codes with no provided data
+                                            $highend = $totals + $highend;
+                                            
+                                            // If the high-end is equal to the total, no need to specify the high-end. If we do specify it, add the note explaining why.
+                                            if ($highend == $totals) {
+                                                echo "<tr><td>Total</td><td>$totals</td></tr></table>";
+                                            } else {
+                                                echo "<tr><td>Total</td><td>$totals-$highend</td></tr></tbody></table><br><p><b>NOTE:</b> There are between 0 and 7 cases of COVID-19 in some ZIP codes of $citown. The Maryland Department of Health does not provide any data for cities/towns with fewer than 8 cases.</p>";
+                                            }
+                                        } else {
+                                            echo ("An unexpected error occurred. Please contact Dhruvi Mirani for help.");
+                                        }
+                                    } else {
+
+                                        // Check which valid name is closest to entered name
+                                        $distance = -1;
+
+                                        foreach ($lines as $name) {
+
+                                            $lev = levenshtein(htmlentities($citown), $name);
+
+                                            if ($lev <= $distance || $distance < 0) {
+
+                                                $closest  = $name;
+                                                $distance = $lev;
+
+                                            }
+                                        }
+
+                                        // Suggest closest name
+                                        echo ("Invalid city/town name. Did you mean: <a href='?loc=$closest'><b>$closest</b></a>?");
+                                    }
+
+                                // If the input has letters or numbers (but does not match a zip code)
+                                } else {
+                                    echo ("Invalid city/town name or zip code.");
+                                }
+                            }
+    
+                        } else {
+                            echo ("City/town names and zip codes cannot include special characters.");
+                        }
+                    }
+                    echo "<br><br><br><br><br><br>";
+                }
+		?> 
 	        </p>
     	</div>
     </form>
