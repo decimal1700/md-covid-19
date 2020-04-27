@@ -88,7 +88,7 @@ if(isset($_POST['submit'])) { } else {
                     } else {
                         
                         // Clean up user input: every letter is lowercase except the first letter of each word in the city/town name.
-                        $citown = ucwords(strtolower($_POST['citown']));
+                        $citown = ucwords(strtolower(trim($_POST['citown'])));
                         
                         // City/town capitalization exceptions
                         if ($citown == "Bwi Airport") {
