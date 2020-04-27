@@ -137,7 +137,6 @@ if(isset($_POST['submit'])) { } else {
                                         $zipstocounts = array_combine($p_zip, $p_count);
                                         
                                         // The Maryland Department of Health does not provide any data for ZIP codes with fewer than 8 cases. Establish a potential high-end of 7 cases for ZIP codes without data.
-                                        
                                         $highend = 0;
                                         
                                         // Echo table headers
