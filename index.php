@@ -8,6 +8,21 @@ $date = str_replace("<br/>", "", $date);
 
 // Format date and fix time zone
 $lastupdated = date('F j, Y \a\t g:i A', (strtotime($date) - (60 * 60 * 4)));
+
+// Import list of valid city/town names into array; this file is equivalent to the list of names in README.md
+$filename = "citowns";
+$lines = file($filename, FILE_IGNORE_NEW_LINES);
+
+// If the user has not searched for any city/town yet and if the URL parameter 'loc' exists as a valid city/town name, automatically search for it
+$loc = htmlentities($_GET["loc"]);
+if(isset($_POST['submit'])) { } else {
+	if (empty($loc)) { } else {
+		if (in_array($loc, $lines)) {
+			$_POST['citown'] = $loc;
+			$_POST['submit'] = true;
+		}
+	}
+}
 ?>
 
 <!DOCTYPE html>
@@ -157,27 +172,23 @@ $lastupdated = date('F j, Y \a\t g:i A', (strtotime($date) - (60 * 60 * 4)));
 				                }
 				            } else {
 
-				            	// Import list of valid city/town names into array; this file is equivalent to the list of names in README.md
-				            	$filename = "citowns";
-				            	$lines = file($filename, FILE_IGNORE_NEW_LINES);
-
 				            	// Check which valid name is closest to entered name
 						$distance = -1;
 
 						foreach ($lines as $name) {
 
-							$lev = levenshtein(htmlentities($citown), $name);
+						    $lev = levenshtein(htmlentities($citown), $name);
 
-							if ($lev <= $distance || $distance < 0) {
+						    if ($lev <= $distance || $distance < 0) {
 
-								$closest  = $name;
-								$distance = $lev;
+							$closest  = $name;
+							$distance = $lev;
 
-							}
+						    }
 						}
 
 						// Suggest closest name
-				                echo ("Invalid city/town name. Did you mean: <b>$closest</b>?");
+				                echo ("Invalid city/town name. Did you mean: <a href='?loc=$closest'><b>$closest</b></a>?");
 				            }
 				        } else {
 				            echo ("City or town names cannot include numbers or special characters.");
