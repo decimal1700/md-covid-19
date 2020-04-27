@@ -35,7 +35,7 @@ $lastupdated = date('F j, Y \a\t g:i A', (strtotime($date) - (60 * 60 * 4)));
     <br>
     <form action="" method="POST">
         <h2 id="heading">Maryland Cases of COVID-19 By City/Town</h2><br>
-        <p id="updatedwhen">Data last updated by the Maryland Department of Health on <?php echo$lastupdated;?></p>
+        <p id="updatedwhen">Data last updated by the Maryland Department of Health on <?php echo htmlentities($lastupdated);?></p>
         <br>
         <div id="container"><br>
 	        <p id="inputlabel"><b>City/Town</b></p>
