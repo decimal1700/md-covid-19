@@ -156,7 +156,28 @@ $lastupdated = date('F j, Y \a\t g:i A', (strtotime($date) - (60 * 60 * 4)));
 				                    echo ("An unexpected error occurred. Please contact Dhruvi Mirani for help.");
 				                }
 				            } else {
-				                echo ("Invalid city/town name.");
+
+				            	// Import list of valid city/town names into array
+				            	$filename = "citowns";
+				            	$lines = file($filename, FILE_IGNORE_NEW_LINES);
+
+				            	// Check which valid name is closest to entered name
+								$distance = -1;
+
+								foreach ($lines as $name) {
+
+								    $lev = levenshtein(htmlentities($citown), $name);
+
+								    if ($lev <= $distance || $distance < 0) {
+
+								        $closest  = $name;
+								        $distance = $lev;
+
+								    }
+								}
+
+								// Suggest closest name
+				                echo ("Invalid city/town name. Did you mean: <b>$closest</b>?");
 				            }
 				        } else {
 				            echo ("City or town names cannot include numbers or special characters.");
