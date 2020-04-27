@@ -1,6 +1,6 @@
 # COVID-19 in Maryland
 
-PHP script to find cases of COVID-19 by Maryland cities/towns. Automatically updates with the Maryland Department of Health's daily database updates. The Department offers data by ZIP code: this tool organizes them into groups based on a user input of a city/town.
+This is a PHP script to find cases of COVID-19 by Maryland cities/towns. Automatically updates with the Maryland Department of Health's daily database updates. The Department offers data by ZIP code: this tool organizes them into groups based on a user input of a city/town.
 
 Publicly available data includes regional case counts across the country, for example, as in a repository provided by The New York Times. However, that data usually indexes large metro areas or counties. This offers more specific data with city/town names, but is limited to the scope of Maryland.
 
