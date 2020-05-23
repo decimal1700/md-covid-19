@@ -1,6 +1,6 @@
 <?php
 // Find out when the data was last updated by the Maryland Department of Health
-exec("curl https://services.arcgis.com/njFNhDsUCentVYJW/ArcGIS/rest/services/ZIPCodes_MD_1/FeatureServer/0", $outputdate, $returnvardate);
+exec("curl https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/MDH_COVID_19_Dashboard_Feature_Layer_ZIPCodes_MEMA/FeatureServer/0", $outputdate, $returnvardate);
 
 // Filter out formatting
 $date = str_replace("<b>Last Edit Date:</b> ", "", $outputdate[117]);
@@ -109,7 +109,7 @@ if(isset($_POST['submit'])) { } else {
                                 $citownurl = escapeshellcmd(urlencode($citown));
 
                                 // Issue data retrival request
-                                exec("curl -XGET 'https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/ZIPCodes_MD_1/FeatureServer/0/query?f=json&where=ZIPCODE1=%27" . $citownurl . "%27&returnGeometry=false&outFields=*'", $output, $returnvar);
+                                exec("curl -XGET 'https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/MDH_COVID_19_Dashboard_Feature_Layer_ZIPCodes_MEMA/FeatureServer/0/query?f=json&where=ZIPCODE1=%27" . $citownurl . "%27&returnGeometry=false&outFields=*'", $output, $returnvar);
 
                                 // If the ZIP code is not recognized by MD, return an error
                                 if (strpos(json_encode($output), 'ProtectedCount') !== false) {
@@ -186,7 +186,7 @@ if(isset($_POST['submit'])) { } else {
                                     $citownurl = escapeshellcmd(urlencode($citown));
                                     
                                     // Issue data retrival request
-                                    exec("curl -XGET 'https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/ZIPCodes_MD_1/FeatureServer/0/query?f=json&where=ZIPNAME=%27" . $citownurl . "%27&returnGeometry=false&outFields=*'", $output, $returnvar);
+                                    exec("curl -XGET 'https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/MDH_COVID_19_Dashboard_Feature_Layer_ZIPCodes_MEMA/FeatureServer/0/query?f=json&where=ZIPNAME=%27" . $citownurl . "%27&returnGeometry=false&outFields=*'", $output, $returnvar);
                                     
                                     // If the city/town is not recognized by MD, return an error
                                     if (strpos(json_encode($output), 'ProtectedCount') !== false) {
