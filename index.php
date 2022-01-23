@@ -3,7 +3,7 @@
 exec("curl https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/MDH_COVID_19_Dashboard_Feature_Layer_ZIPCodes_MEMA/FeatureServer/0/", $outputdate, $returnvardate);
 
 // Filter out formatting
-$date = str_replace("<b>Last Edit Date:</b> ", "", $outputdate[117]);
+$date = str_replace("<b>Last Edit Date:</b> ", "", $outputdate[119]);
 $date = str_replace("<br/>", "", $date);
 
 // Format date and fix time zone
